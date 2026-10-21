@@ -61,6 +61,7 @@ def exe_of(pid):  # tên file exe của tiến trình
 
 # app DSP/mixer/ảo hóa âm thanh phát lại tiếng của mọi app -> không tính là "nguồn khác" (khớp theo chuỗi con trong tên exe)
 IGNORE = ["fxsound", "voicemeeter", "voicemod", "krisp", "nvidia broadcast", "audio router", "boom3d", "voxal"]
+RESUME_AFTER = 3  # số lần check (1s/lần) phải yên lặng liên tục mới phát lại
 def ign(ex): return any(k in ex for k in IGNORE)
 
 def others(pid):  # có tiến trình khác đang phát âm thanh?
@@ -122,8 +123,9 @@ def play():
             if duck and not sm and (kp or not hidden):  # nguồn khác phát -> pause, hết -> phát tiếp đúng vị trí
                 try: m = others(pid)
                 except Exception: m = False
-                if m != muted:
-                    muted = m
+                quiet = 0 if m else quiet + 1
+                if m and not muted or (not m and muted and quiet >= RESUME_AFTER):
+                    m = muted = bool(m)
                     if m: mci("pause a")
                     elif kp or not hidden: lp = (now - t0) % L; mci(f"play a from {int(lp * 1000)}")
             fg = u32.GetForegroundWindow(); hide = False
@@ -288,7 +290,7 @@ def main():
 
     import webbrowser
     ab = T["about"] = ttk.Frame(body)
-    ttk.Label(ab, text="OpenWallpaperEngine", font=("Segoe UI", 20, "bold")).pack(anchor="w", pady=(8, 0))
+    ttk.Label(ab, text="OpenWallpaperEngine v1.1", font=("Segoe UI", 20, "bold")).pack(anchor="w", pady=(8, 0))
     ttk.Label(ab, text="A free, lightweight animated wallpaper engine for Windows.").pack(anchor="w", pady=(2, 14))
     def sec(h, txt, url=None):
         ttk.Label(ab, text=h, font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(10, 0))
